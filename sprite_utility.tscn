@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://bu62ww4hs5sky"]
+
+[ext_resource type="Script" uid="uid://dngayr4x0yb2y" path="res://scripts/sprite_utility.gd" id="1_ahpl0"]
+[ext_resource type="Script" uid="uid://clyptexc8xtyf" path="res://scripts/max_bound_checker.gd" id="2_sipt1"]
+
+[node name="SpriteUtility" type="Node2D" unique_id=2012568563]
+script = ExtResource("1_ahpl0")
+
+[node name="MaxBoundChecker" type="Node" parent="." unique_id=320196579]
+unique_name_in_owner = true
+script = ExtResource("2_sipt1")
+
+[node name="Label" type="Label" parent="MaxBoundChecker" unique_id=159261927]
+unique_name_in_owner = true
+visible = false
+offset_left = 212.0
+offset_top = 954.0
+offset_right = 312.0
+offset_bottom = 977.0
+text = "Max bounds:"
+
+[node name="ReferenceRect" type="ReferenceRect" parent="MaxBoundChecker" unique_id=175712282]
+unique_name_in_owner = true
+offset_right = 40.0
+offset_bottom = 40.0
