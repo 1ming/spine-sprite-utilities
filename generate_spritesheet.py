@@ -36,6 +36,16 @@ class SpritesheetGenerator:
         # create output dir for this scene
         Path.mkdir(self.output_dir, parents=True, exist_ok=True)
 
+        # create sub-directory for Godot's recording output
+        self.recordings_dir = GODOT_RECORDINGS_DIR.joinpath(self.scene_name)
+        try:
+            Path.mkdir(self.recordings_dir, parents=True)
+        except FileExistsError:
+            # clear out contents if it already exists
+            for file in self.recordings_dir.iterdir():
+                if file.is_file():
+                    file.unlink()
+
     # run scene without args to get bounding box data and list of sprites and
     # animation names
     # Godot will output the data in a file in the default recording directory
