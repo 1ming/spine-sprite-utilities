@@ -157,15 +157,19 @@ class SpritesheetGenerator:
     # outputs cropped files as: frame%8d.png
     # raw images are deleted after cropping
     def crop_frames(self, images_dir: Path):
+        input_file = f"{images_dir.joinpath("raw_frame%08d.png")}"
+        output_file = f"{images_dir.joinpath("frame%08d.png")}"
+        crop_options = f"crop={self.crop_config.width}:{self.crop_config.height}:{self.crop_config.x}:{self.crop_config.y}"
         ffmpeg_args = [
             "ffmpeg",
+            "-y",
             "-i",
-            f"{images_dir.joinpath("raw_frame%08d.png")}",
+            input_file,
             "-vf",
-            f"crop={self.crop_config.width}:{self.crop_config.height}:{self.crop_config.x}:{self.crop_config.y}",
+            crop_options,
             "-start_number",
             "0",
-            f"{images_dir.joinpath("frame%08d.png")}",
+            output_file,
         ]
         print(f"Running command with args: {ffmpeg_args}")
 
@@ -176,6 +180,50 @@ class SpritesheetGenerator:
         for file in images_dir.glob("raw_frame*.png"):
             if file.is_file():
                 file.unlink()
+
+    # create animated png
+    def create_previews(self, images_dir: Path) -> list[Path]:
+        output_files = []
+        # generated animated png from frames
+        output_dir = images_dir.parent
+        input_file = f"{images_dir.joinpath("frame%08d.png")}"
+        output_file = f"{output_dir.joinpath("preview.apng")}"
+        ffmpeg_args = [
+            "ffmpeg",
+            "-y",
+            "-framerate",
+            str(FIXED_FPS),
+            "-i",
+            input_file,
+            "-plays",
+            "0",
+            output_file,
+        ]
+        subprocess.run(ffmpeg_args, check=False)
+        print(f"Running command with args: {ffmpeg_args}")
+        print(f"Preview saved to: {output_file}")
+        output_files.append(output_file)
+
+        # convert apng to gif
+        # filter with tailored palette for better colours
+        # reference: https://www.michelleenos.com/notes/ffmpeg-gif-video/
+        input_file = output_file
+        output_file = f"{output_dir.joinpath("preview.gif")}"
+        ffmpeg_args = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            input_file,
+            "-filter_complex",
+            "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
+            output_file,
+        ]
+        subprocess.run(ffmpeg_args, check=False)
+        print(f"Running command with args: {ffmpeg_args}")
+        print(f"Preview saved to: {output_file}")
+        output_files.append(output_file)
+
+        return output_files
 
     def run(self):
         # get bounding box
@@ -213,4 +261,5 @@ if __name__ == "__main__":
 
     if args.animation is not None:
         # only generate spritesheet for a specific animation
-        spritesheet_generator.record_animation_frames(*args.animation)
+        image_dir = spritesheet_generator.record_animation_frames(*args.animation)
+        spritesheet_generator.create_previews(image_dir)
