@@ -2,6 +2,7 @@
 from pathlib import Path
 import subprocess
 import argparse
+import json
 
 # Godot configuration
 GODOT_EXECUTABLE = "/Applications/Godot.app/Contents/MacOS/Godot"
@@ -39,8 +40,19 @@ class SpritesheetGenerator:
     # animation names
     # Godot will output the data in a file in the default recording directory
     def get_scene_data(self) -> dict:
+        # run Godot with no args to generate data file
         print(f"Running Godot with args: {self.common_args}")
         subprocess.run(self.common_args, check=False)
+
+        # extract data to dictionary
+        data = {}
+        with open(GODOT_DATA_FILE, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+
+        # move data file to output dir
+        GODOT_DATA_FILE.move_into(self.output_dir)
+        
+        return data
 
     # run godot project with a specific sprite and animation to get animation
     # frame recordings
@@ -48,11 +60,9 @@ class SpritesheetGenerator:
         pass
 
     def run(self):
-        pass
-
         # get bounding box
         # get sprites list
-        self.get_scene_data()
+        data = self.get_scene_data()
 
         # for each sprite
         # create directory for sprite
