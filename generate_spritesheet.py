@@ -66,7 +66,7 @@ class SpritesheetGenerator:
 
     # run godot project with a specific sprite and animation to get animation
     # frame recordings
-    def record_animation_frames(self, sprite: str, animation: str) -> list[Path]:
+    def record_animation_frames(self, sprite: str, animation: str) -> Path:
         # run Godot with args for recording a specific animation
         args = [
             *self.common_args,
@@ -97,7 +97,13 @@ class SpritesheetGenerator:
             if file.is_file():
                 print(f"Removing audio file: {file}")
                 file.unlink()
-        return frames
+
+        # move files to output directory
+        output_dir = self.output_dir.joinpath(sprite, animation, "images")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        for file in frames:
+            file.move_into(output_dir)
+        return output_dir
 
     def run(self):
         # get bounding box
