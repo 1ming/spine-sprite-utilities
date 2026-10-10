@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+from dataclasses import dataclass
 import subprocess
 import argparse
 import json
@@ -23,16 +24,43 @@ COMMON_ARGS = [
 ]
 
 
+@dataclass
+class SheetConfig:
+    padding: int = 10
+    columns: int = 5
+
+
+@dataclass
+class CropConfig:
+    # size
+    width: int
+    height: int
+
+    # origin
+    x: int
+    y: int
+
+
 class SpritesheetGenerator:
-    def __init__(self, scene_name: str, output_dir: str):
+    def __init__(
+        self,
+        scene_name: str,
+        output_dir: str,
+        sheet_config: SheetConfig = SheetConfig(),
+    ):
         self.scene_name = scene_name
         self.output_dir = Path(output_dir).joinpath(self.scene_name)
+        self.sheet_config = sheet_config
         self.common_args = [
             GODOT_EXECUTABLE,
             *COMMON_ARGS,
             "--scene",
             f"scenes/{scene_name}.tscn",
         ]
+
+        # store data about max bounding box and list of animations form scene
+        self.raw_data = {}
+        self.crop_config: CropConfig
 
         # create output dir for this scene
         Path.mkdir(self.output_dir, parents=True, exist_ok=True)
@@ -46,13 +74,29 @@ class SpritesheetGenerator:
         subprocess.run(self.common_args, check=False)
 
         # extract data to dictionary
-        data = {}
         with open(GODOT_DATA_FILE, "r", encoding="utf-8") as fh:
-            data = json.load(fh)
+            self.raw_data = json.load(fh)
 
         # move data file to output dir
         GODOT_DATA_FILE.move_into(self.output_dir)
-        return data
+
+        # populate crop config from data
+        bounds_data = self.raw_data["bounds"]
+        self.crop_config = CropConfig(
+            # round width and height to nearest 10
+            # NOTE due to rounding padding is only used as a rough guide
+            width=round(
+                int(
+                    bounds_data["width"] + self.sheet_config.padding,
+                ),
+                -1,
+            ),
+            height=round(int(bounds_data["height"] + self.sheet_config.padding), -1),
+            x=round(bounds_data["x"]),
+            y=round(bounds_data["y"]),
+        )
+
+        return self.raw_data
 
     # run godot project with a specific sprite and animation to get animation
     # frame recordings
@@ -100,6 +144,30 @@ class SpritesheetGenerator:
 
         return images_dir
 
+    # crop all images within a directory using ffmpeg
+    # expects naming scheme to be raw_frame%8d.png (following godot's output convention for PNG recordings)
+    # outputs cropped files as: frame%8d.png
+    # raw images are deleted after cropping
+    def crop_frames(self, images_dir: Path):
+        ffmpeg_args = [
+            "ffmpeg",
+            "-i",
+            '"raw_frame%08d.png"',
+            "-vf",
+            f'"crop={self.crop_config.width}:{self.crop_config.height}:{self.crop_config.x}:{self.crop_config.y}',
+            "-start_number",
+            "0",
+            "frame%08d.png",
+        ]
+        print(f"Running command with args: {ffmpeg_args}")
+
+        # crop images
+        subprocess.run(ffmpeg_args, check=False)
+
+        # delete raw files
+        for file in images_dir.glob("raw_frame*.png"):
+            if file.is_file():
+                file.unlink()
 
     def run(self):
         # get bounding box
