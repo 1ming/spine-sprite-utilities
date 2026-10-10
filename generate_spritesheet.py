@@ -23,7 +23,16 @@ COMMON_ARGS = [
 class SpritesheetGenerator:
     def __init__(self, scene_name: str, output_dir: str):
         self.scene_name = scene_name
-        self.output_dir = Path(output_dir)
+        self.output_dir = Path(output_dir).joinpath(self.scene_name)
+        self.common_args = [
+            GODOT_EXECUTABLE,
+            *COMMON_ARGS,
+            "--scene",
+            GODOT_PROJECT_DIR.joinpath(f"{scene_name}.tscn"),
+        ]
+
+        # create output dir for this scene
+        Path.mkdir(self.output_dir, parents=True, exist_ok=True)
 
     # run scene without args to get bounding box data and list of sprites and
     # animation names
@@ -37,10 +46,7 @@ class SpritesheetGenerator:
         pass
 
     def run(self):
-        # create output dir for this scene
-        Path.mkdir(
-            self.output_dir.joinpath(self.scene_name), parents=True, exist_ok=True
-        )
+        pass
 
         # get bounding box
         # get sprites list

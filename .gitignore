@@ -1,6 +1,8 @@
 .venv
-output/
 
+# data
+output/
+godot-recordings/
 
 # OS specific
 .DS_Store
