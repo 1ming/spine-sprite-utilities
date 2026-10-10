@@ -3,6 +3,7 @@ from pathlib import Path
 import subprocess
 import argparse
 import json
+import time
 
 # Godot configuration
 GODOT_EXECUTABLE = "/Applications/Godot.app/Contents/MacOS/Godot"
@@ -61,13 +62,42 @@ class SpritesheetGenerator:
 
         # move data file to output dir
         GODOT_DATA_FILE.move_into(self.output_dir)
-        
         return data
 
     # run godot project with a specific sprite and animation to get animation
     # frame recordings
-    def record_animation_frames(self, sprite: str, animation: str):
-        pass
+    def record_animation_frames(self, sprite: str, animation: str) -> list[Path]:
+        # run Godot with args for recording a specific animation
+        args = [
+            *self.common_args,
+            "--write-movie",
+            # using abs path to store outside Godot's project dir
+            self.recordings_dir.joinpath("frame.png").absolute(),
+            "--",
+            sprite,
+            animation,
+        ]
+        print(f"Running Godot with args: {args}")
+        subprocess.run(args, check=False)
+
+        # TODO add check to ensure files have been written. for now just use a sleep
+        time.sleep(1)
+
+        # HACK delete last animation frame image
+        # Godot MovieWriter always records an extra frame after requesting quit
+        # the sprite is also hidden in that frame to make it easy to identify
+        frames = sorted(self.recordings_dir.glob("*.png"))
+        extra_frame = frames.pop()
+        print(f"Removing extra frame: {extra_frame}")
+        extra_frame.unlink()
+
+        # remove wav file(s)
+        wav_files = self.recordings_dir.glob("*.wav")
+        for file in wav_files:
+            if file.is_file():
+                print(f"Removing audio file: {file}")
+                file.unlink()
+        return frames
 
     def run(self):
         # get bounding box
@@ -79,7 +109,6 @@ class SpritesheetGenerator:
         # for each animation
         # create subdirectory for each animation
         # run godot to record animation frames
-        # HACK delete last frame (MovieWriter always records an extra frame after requesting quit)
         # crop frames to bounding box size
 
 
@@ -92,7 +121,18 @@ if __name__ == "__main__":
         default=DEFAULT_OUTPUT_DIR,
         help="output directory for results",
     )
+    parser.add_argument(
+        "-a",
+        "--animation",
+        nargs=2,
+        help="only generate spritesheet for a specific sprite and animation. specify sprite name followed by animation name",
+    )
     args = parser.parse_args()
 
     spritesheet_generator = SpritesheetGenerator(args.scene, args.output_dir)
-    spritesheet_generator.run()
+
+    if args.animation is None:
+        spritesheet_generator.run()
+    else:
+        # only generate spritesheet for a specific animation
+        spritesheet_generator.record_animation_frames(*args.animation)
