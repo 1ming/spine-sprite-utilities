@@ -21,6 +21,12 @@ var animation_list: Array[String]
 var top_left_corner: Vector2
 var bottom_right_corner: Vector2
 
+# track data to be written to file
+var save_data = {
+	sprites = {},
+	bounds = {}
+}
+
 func _ready() -> void:
 	var has_sprite_children = false
 	
@@ -58,6 +64,8 @@ func setup():
 	animation_list.clear()
 	for animation in sprite.skeleton_data_res.get_animations() as Array[SpineAnimation]:
 		animation_list.append(animation.get_name())
+	
+	save_data.sprites[sprite.name] = animation_list
 	
 	# set first animation
 	sprite.get_animation_state().set_animation(animation_list[animation_index], false, 0)
@@ -120,7 +128,7 @@ func _on_animation_finished(sprite, _b, _c):
 
 func _save_to_file(filename: String):
 	# max bounding box data to be used for cropping in post-processing
-	var data = {
+	save_data.bounds = {
 		width = max_bounds.size.x,
 		height = max_bounds.size.y,
 		x = max_bounds.global_position.x,
@@ -128,7 +136,7 @@ func _save_to_file(filename: String):
 	}
 	
 	var fh := FileAccess.open(filename, FileAccess.WRITE)
-	var contents = JSON.stringify(data)
+	var contents = JSON.stringify(save_data)
 	fh.store_line(contents)
 	print("Saved data to file: ", filename)
 	
