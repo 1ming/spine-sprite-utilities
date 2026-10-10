@@ -147,6 +147,9 @@ class SpritesheetGenerator:
                 print(f"Removing audio file: {file}")
                 file.unlink()
 
+        # crop frames to bounding box size
+        self.crop_frames(images_dir)
+
         return images_dir
 
     # crop all images within a directory using ffmpeg
@@ -157,12 +160,12 @@ class SpritesheetGenerator:
         ffmpeg_args = [
             "ffmpeg",
             "-i",
-            '"raw_frame%08d.png"',
+            f"{images_dir.joinpath("raw_frame%08d.png")}",
             "-vf",
-            f'"crop={self.crop_config.width}:{self.crop_config.height}:{self.crop_config.x}:{self.crop_config.y}',
+            f"crop={self.crop_config.width}:{self.crop_config.height}:{self.crop_config.x}:{self.crop_config.y}",
             "-start_number",
             "0",
-            "frame%08d.png",
+            f"{images_dir.joinpath("frame%08d.png")}",
         ]
         print(f"Running command with args: {ffmpeg_args}")
 
@@ -206,8 +209,8 @@ if __name__ == "__main__":
 
     spritesheet_generator = SpritesheetGenerator(args.scene, args.output_dir)
 
-    if args.animation is None:
-        spritesheet_generator.run()
-    else:
+    spritesheet_generator.run()
+
+    if args.animation is not None:
         # only generate spritesheet for a specific animation
         spritesheet_generator.record_animation_frames(*args.animation)
