@@ -229,8 +229,10 @@ class SpritesheetGenerator:
         return output_files
 
     # create spritesheet by concatenating individual frames together
-    def create_spritesheet(self, images_dir: Path) -> Path:
-        output_file = images_dir.parent.joinpath("sheet.png")
+    def create_spritesheet(self, images_dir: Path, filename: str = None) -> Path:
+        if filename is None:
+            filename = "sheet.png"
+        output_file = images_dir.parent.joinpath(filename)
 
         # calculate size for sheet based on cropped image config and number of frames
         frames = sorted(images_dir.iterdir())
@@ -298,7 +300,11 @@ if __name__ == "__main__":
     spritesheet_generator.run()
 
     if args.animation is not None:
+        sprite, animation = args.animation
+
         # only generate spritesheet for a specific animation
         image_dir = spritesheet_generator.record_animation_frames(*args.animation)
         spritesheet_generator.create_previews(image_dir)
-        spritesheet_generator.create_spritesheet(image_dir)
+        spritesheet_generator.create_spritesheet(
+            image_dir, f"{sprite.lower()}-{animation.lower()}_sheet.png"
+        )
