@@ -57,5 +57,9 @@ func _ready() -> void:
 	#frame_num += 1
 
 func _on_animation_finished(_sprite, _b, _c):
+	# NOTE one extra frame will be recorded after requesting to quit
+	# hiding the sprite to make it easy to tell that the last frame is the one
+	# that should be removed externally
 	get_tree().paused = true
+	sprite.hide()
 	get_tree().quit()
