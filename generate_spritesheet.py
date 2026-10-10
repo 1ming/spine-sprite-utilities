@@ -37,16 +37,6 @@ class SpritesheetGenerator:
         # create output dir for this scene
         Path.mkdir(self.output_dir, parents=True, exist_ok=True)
 
-        # create sub-directory for Godot's recording output
-        self.recordings_dir = GODOT_RECORDINGS_DIR.joinpath(self.scene_name)
-        try:
-            Path.mkdir(self.recordings_dir, parents=True)
-        except FileExistsError:
-            # clear out contents if it already exists
-            for file in self.recordings_dir.iterdir():
-                if file.is_file():
-                    file.unlink()
-
     # run scene without args to get bounding box data and list of sprites and
     # animation names
     # Godot will output the data in a file in the default recording directory
@@ -67,18 +57,28 @@ class SpritesheetGenerator:
     # run godot project with a specific sprite and animation to get animation
     # frame recordings
     def record_animation_frames(self, sprite: str, animation: str) -> Path:
+        # set up output dir
+        images_dir = self.output_dir.joinpath(sprite, animation, "images")
+        try:
+            images_dir.mkdir(parents=True)
+        except FileExistsError:
+            # clear out contents if it already exists
+            for file in images_dir.iterdir():
+                if file.is_file():
+                    file.unlink()
+
         # run Godot with args for recording a specific animation
-        args = [
+        recording_args = [
             *self.common_args,
             "--write-movie",
             # using abs path to store outside Godot's project dir
-            self.recordings_dir.joinpath("frame.png").absolute(),
+            images_dir.joinpath("raw_frame.png").absolute(),
             "--",
             sprite,
             animation,
         ]
-        print(f"Running Godot with args: {args}")
-        subprocess.run(args, check=False)
+        print(f"Running Godot with args: {recording_args}")
+        subprocess.run(recording_args, check=False)
 
         # TODO add check to ensure files have been written. for now just use a sleep
         time.sleep(1)
@@ -86,24 +86,20 @@ class SpritesheetGenerator:
         # HACK delete last animation frame image
         # Godot MovieWriter always records an extra frame after requesting quit
         # the sprite is also hidden in that frame to make it easy to identify
-        frames = sorted(self.recordings_dir.glob("*.png"))
+        frames = sorted(images_dir.glob("*.png"))
         extra_frame = frames.pop()
         print(f"Removing extra frame: {extra_frame}")
         extra_frame.unlink()
 
         # remove wav file(s)
-        wav_files = self.recordings_dir.glob("*.wav")
+        wav_files = images_dir.glob("*.wav")
         for file in wav_files:
             if file.is_file():
                 print(f"Removing audio file: {file}")
                 file.unlink()
 
-        # move files to output directory
-        output_dir = self.output_dir.joinpath(sprite, animation, "images")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        for file in frames:
-            file.move_into(output_dir)
-        return output_dir
+        return images_dir
+
 
     def run(self):
         # get bounding box
