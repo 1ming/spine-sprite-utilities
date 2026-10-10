@@ -3,7 +3,7 @@
 /android/
 
 # don't include assets or actual sprite scenes since this is just a utility
-sprites/
+scenes/
 assets/
 
 # don't include spine-godot runtime, user to add themselves
