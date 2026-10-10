@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import subprocess
+import argparse
 
 # Godot configuration
 GODOT_EXECUTABLE = "/Applications/Godot.app/Contents/MacOS/Godot"
 GODOT_PROJECT_DIR = Path("godot-project/")
 GODOT_RECORDINGS_DIR = Path("godot-recordings/")
 GODOT_DATA_FILE = GODOT_RECORDINGS_DIR.joinpath("data.json")
-SCENE_DIR = GODOT_PROJECT_DIR.joinpath("scenes")
 FIXED_FPS = 24
 
 
@@ -16,7 +17,7 @@ COMMON_ARGS = [
     "--path",
     GODOT_PROJECT_DIR,
     "--fixed-fps",
-    FIXED_FPS,
+    str(FIXED_FPS),
 ]
 
 
@@ -28,7 +29,7 @@ class SpritesheetGenerator:
             GODOT_EXECUTABLE,
             *COMMON_ARGS,
             "--scene",
-            GODOT_PROJECT_DIR.joinpath(f"{scene_name}.tscn"),
+            f"scenes/{scene_name}.tscn",
         ]
 
         # create output dir for this scene
@@ -38,7 +39,8 @@ class SpritesheetGenerator:
     # animation names
     # Godot will output the data in a file in the default recording directory
     def get_scene_data(self) -> dict:
-        pass
+        print(f"Running Godot with args: {self.common_args}")
+        subprocess.run(self.common_args, check=False)
 
     # run godot project with a specific sprite and animation to get animation
     # frame recordings
@@ -50,6 +52,7 @@ class SpritesheetGenerator:
 
         # get bounding box
         # get sprites list
+        self.get_scene_data()
 
         # for each sprite
         # create directory for sprite
@@ -61,6 +64,15 @@ class SpritesheetGenerator:
 
 
 if __name__ == "__main__":
-    TEST_SCENE = "Scene1"
-    spritesheet_generator = SpritesheetGenerator(TEST_SCENE, DEFAULT_OUTPUT_DIR)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("scene", help="name of Godot scene containing SpineSprites")
+    parser.add_argument(
+        "-o",
+        "--output-dir",
+        default=DEFAULT_OUTPUT_DIR,
+        help="output directory for results",
+    )
+    args = parser.parse_args()
+
+    spritesheet_generator = SpritesheetGenerator(args.scene, args.output_dir)
     spritesheet_generator.run()

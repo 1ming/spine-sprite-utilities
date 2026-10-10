@@ -26,7 +26,7 @@ window/stretch/aspect="expand"
 
 [editor]
 
-movie_writer/movie_file="/Users/ming/projects/gamedev/asset-processing/godot-recordings/frame.png"
+movie_writer/movie_file="/Users/ming/projects/gamedev/asset-processing/spine-sprite-utilities/godot-recordings/frame.png"
 movie_writer/fps=24
 
 [physics]
