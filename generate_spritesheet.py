@@ -265,17 +265,21 @@ class SpritesheetGenerator:
         sheet.save(output_file)
         print(f"Spritesheet saved to: {output_file}")
 
-    def run(self):
-        # get bounding box
-        # get sprites list
+    def run(self, animation_args: tuple[str, str] = None):
+        # get bounding box and animations list
         data = self.get_scene_data()
 
-        # for each sprite
-        # create directory for sprite
-        # for each animation
-        # create subdirectory for each animation
-        # run godot to record animation frames
-        # crop frames to bounding box size
+        if animation_args is None:
+            # generate sheets for all directions and animations
+            pass
+        else:
+            # only generate sheet for a specific animation
+            sprite, animation = animation_args
+            image_dir = self.record_animation_frames(*animation_args)
+            self.create_previews(image_dir)
+            self.create_spritesheet(
+                image_dir, f"{sprite.lower()}-{animation.lower()}_sheet.png"
+            )
 
 
 if __name__ == "__main__":
@@ -291,20 +295,10 @@ if __name__ == "__main__":
         "-a",
         "--animation",
         nargs=2,
-        help="only generate spritesheet for a specific sprite and animation. specify sprite name followed by animation name",
+        help="only generate spritesheet for a specific sprite and animation. \
+            specify sprite name followed by animation name",
     )
     args = parser.parse_args()
 
     spritesheet_generator = SpritesheetGenerator(args.scene, args.output_dir)
-
-    spritesheet_generator.run()
-
-    if args.animation is not None:
-        sprite, animation = args.animation
-
-        # only generate spritesheet for a specific animation
-        image_dir = spritesheet_generator.record_animation_frames(*args.animation)
-        spritesheet_generator.create_previews(image_dir)
-        spritesheet_generator.create_spritesheet(
-            image_dir, f"{sprite.lower()}-{animation.lower()}_sheet.png"
-        )
+    spritesheet_generator.run(args.animation)
