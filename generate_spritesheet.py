@@ -5,6 +5,9 @@ import subprocess
 import argparse
 import json
 import time
+import math
+
+from PIL import Image
 
 # Godot configuration
 GODOT_EXECUTABLE = "/Applications/Godot.app/Contents/MacOS/Godot"
@@ -27,7 +30,7 @@ COMMON_ARGS = [
 @dataclass
 class SheetConfig:
     padding: int = 10
-    columns: int = 5
+    max_columns: int = 8
 
 
 @dataclass
@@ -225,6 +228,41 @@ class SpritesheetGenerator:
 
         return output_files
 
+    # create spritesheet by concatenating individual frames together
+    def create_spritesheet(self, images_dir: Path) -> Path:
+        output_file = images_dir.parent.joinpath("sheet.png")
+
+        # calculate size for sheet based on cropped image config and number of frames
+        frames = sorted(images_dir.iterdir())
+        num_images = len(frames)
+
+        # calculate of rows and columns
+        columns = min(self.sheet_config.max_columns, num_images)
+        rows = num_images // columns
+        if num_images % columns != 0:
+            rows += 1
+
+        # sheet size
+        width = self.crop_config.width * columns
+        height = self.crop_config.height * rows
+
+        # create new image for sheet that fits all images
+        sheet = Image.new("RGBA", (width, height))
+
+        # paste individual frames onto sheet
+        for i, frame in enumerate(frames):
+            # compute target position for pasting (top left corner)
+            row = i // columns
+            col = i % columns
+            pos = (col * self.crop_config.width, row * self.crop_config.height)
+
+            with Image.open(frame, "r") as frame_img:
+                sheet.paste(frame_img, pos)
+
+        # save sheet to file
+        sheet.save(output_file)
+        print(f"Spritesheet saved to: {output_file}")
+
     def run(self):
         # get bounding box
         # get sprites list
@@ -263,3 +301,4 @@ if __name__ == "__main__":
         # only generate spritesheet for a specific animation
         image_dir = spritesheet_generator.record_animation_frames(*args.animation)
         spritesheet_generator.create_previews(image_dir)
+        spritesheet_generator.create_spritesheet(image_dir)
