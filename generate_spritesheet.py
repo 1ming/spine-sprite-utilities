@@ -69,16 +69,21 @@ class SpritesheetGenerator:
     # animation names
     # Godot will output the data in a file in the default recording directory
     def get_scene_data(self) -> dict:
-        # run Godot with no args to generate data file
-        print(f"Running Godot with args: {self.common_args}")
-        subprocess.run(self.common_args, check=False)
+        # check if data file already exists
+        data_file = self.output_dir.joinpath("data.json")
+        if data_file.exists():
+            print(f"Using existing data file: {data_file}")
+        else:
+            # run Godot with no args to generate data file
+            print(f"Running Godot with args: {self.common_args}")
+            subprocess.run(self.common_args, check=False)
+
+            # move data file to output dir
+            GODOT_DATA_FILE.move(data_file)
 
         # extract data to dictionary
-        with open(GODOT_DATA_FILE, "r", encoding="utf-8") as fh:
+        with open(data_file, "r", encoding="utf-8") as fh:
             self.raw_data = json.load(fh)
-
-        # move data file to output dir
-        GODOT_DATA_FILE.move_into(self.output_dir)
 
         # populate crop config from data
         bounds_data = self.raw_data["bounds"]
