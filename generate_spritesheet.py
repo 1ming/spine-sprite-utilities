@@ -94,15 +94,10 @@ class SpritesheetGenerator:
         # populate crop config from data
         bounds_data = self.raw_data["bounds"]
         self.crop_config = CropConfig(
-            # round width and height to nearest 10
+            # round width and height to nearest 8 for easier downscaling
             # NOTE due to rounding padding is only used as a rough guide
-            width=round(
-                int(
-                    bounds_data["width"] + self.sheet_config.padding,
-                ),
-                -1,
-            ),
-            height=round(int(bounds_data["height"] + self.sheet_config.padding), -1),
+            width=round((bounds_data["width"] + self.sheet_config.padding) / 8) * 8,
+            height=round((bounds_data["height"] + self.sheet_config.padding) / 8) * 8,
             x=round(bounds_data["x"]),
             y=round(bounds_data["y"]),
         )
@@ -267,14 +262,29 @@ class SpritesheetGenerator:
         # save sheet to file
         sheet.save(output_file)
         print(f"Spritesheet saved to: {output_file}")
+        return output_file
 
     # record and create spritesheet for a specific animation
     def generate_spritesheet(self, sprite: str, animation: str):
         image_dir = self._record_animation_frames(sprite, animation)
+        sheet_filename = f"{sprite.lower()}-{animation.lower()}_sheet.png"
         self._create_previews(image_dir)
-        self._construct_spritesheet(
-            image_dir, f"{sprite.lower()}-{animation.lower()}_sheet.png"
+        sheet_path = self._construct_spritesheet(image_dir, sheet_filename)
+
+        # generate small scaled-down versions of the sheet
+        half_sheet = sheet_path.with_name(f"{sheet_path.stem}_half{sheet_path.suffix}")
+        self._shrink_image(sheet_path, half_sheet, 2)
+        quarter_sheet = sheet_path.with_name(
+            f"{sheet_path.stem}_quarter{sheet_path.suffix}"
         )
+        self._shrink_image(half_sheet, quarter_sheet, 2)
+
+    # shrink an image by a factor and save it as a new file
+    def _shrink_image(self, input_file: Path, output_file: Path, factor: int = 2):
+        with Image.open(input_file, "r") as im:
+            width, height = (im.width // factor, im.height // factor)
+            im_resized = im.resize((width, height))
+            im_resized.save(output_file)
 
     # generate spritesheets for all sprites and their animations
     # within the specified Godot scene
