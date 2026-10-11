@@ -58,6 +58,7 @@ func setup():
 	var sprite: SpineSprite = directions[dir_index]
 	pose_bounds = ReferenceRect.new()
 	sprite.add_child(pose_bounds)
+	pose_bounds.border_color=Color.YELLOW
 	sprite.show()
 	
 	# get animation list for this sprite
@@ -65,7 +66,7 @@ func setup():
 	for animation in sprite.skeleton_data_res.get_animations() as Array[SpineAnimation]:
 		animation_list.append(animation.get_name())
 	
-	save_data.sprites[sprite.name] = animation_list
+	save_data.sprites[sprite.name] = animation_list.duplicate()
 	
 	# set first animation
 	sprite.get_animation_state().set_animation(animation_list[animation_index], false, 0)
@@ -77,7 +78,7 @@ func _process(_delta: float) -> void:
 	
 	# update rect for pose bounds
 	pose_bounds.position = bounds.position
-	pose_bounds.custom_minimum_size = bounds.size
+	pose_bounds.size = bounds.size
 	
 	# update rect for max bounds
 	# use global rect for calculations to avoid negative values
