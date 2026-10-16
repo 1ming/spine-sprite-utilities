@@ -183,12 +183,12 @@ class SpritesheetGenerator:
                 file.unlink()
 
     # create animated png
-    def _create_previews(self, images_dir: Path) -> list[Path]:
+    def _create_previews(self, images_dir: Path, filename_prefix:str="") -> list[Path]:
         output_files = []
         # generated animated png from frames
         output_dir = images_dir.parent
         input_file = f"{images_dir.joinpath("frame%08d.png")}"
-        output_file = f"{output_dir.joinpath("preview.apng")}"
+        output_file = f"{output_dir.joinpath(f"{filename_prefix}_preview.apng")}"
         ffmpeg_args = [
             "ffmpeg",
             "-y",
@@ -209,7 +209,7 @@ class SpritesheetGenerator:
         # filter with tailored palette for better colours
         # reference: https://www.michelleenos.com/notes/ffmpeg-gif-video/
         input_file = output_file
-        output_file = f"{output_dir.joinpath("preview.gif")}"
+        output_file = f"{output_dir.joinpath(f"{filename_prefix}_preview.gif")}"
         ffmpeg_args = [
             "ffmpeg",
             "-y",
@@ -267,8 +267,9 @@ class SpritesheetGenerator:
     # record and create spritesheet for a specific animation
     def generate_spritesheet(self, sprite: str, animation: str):
         image_dir = self._record_animation_frames(sprite, animation)
-        sheet_filename = f"{sprite.lower()}-{animation.lower()}_sheet.png"
-        self._create_previews(image_dir)
+        filename_prefix = f"{sprite.lower()}-{animation.lower()}"
+        sheet_filename = f"{filename_prefix}_sheet.png"
+        self._create_previews(image_dir, filename_prefix=filename_prefix)
         sheet_path = self._construct_spritesheet(image_dir, sheet_filename)
 
         # generate small scaled-down versions of the sheet
