@@ -6,12 +6,9 @@ Script to generate animated sprite overlaid onto static background as a gif.
 from pathlib import Path
 import subprocess
 import argparse
+from PIL import Image
 
 DEFAULT_OUTPUT_DIR = "output_preview/"
-
-# NOTE assume bg image chosen is already this size
-WIDTH = 160
-HEIGHT = 160
 
 # determine the number of frames inside a .apng
 # return as a string containing the number of frames
@@ -35,17 +32,29 @@ def _get_num_frames(filename: Path) -> str:
     print(f"output: {output}")
     return output.strip().decode("utf-8")
 
+# get image width and height
+def _get_image_dimensions(filename: Path) -> tuple[int,int]:
+    with Image.open(filename) as img:
+        return img.size
 
-# overlay .apng with a static .png background
-def generate_overlaid_animation(input_file: Path, bg_file: Path, output_file: Path):
+# overlay .apng with a static .png background, convert and output as .gif
+# scales to the background image size
+def generate_overlaid_animation(input_file: Path, bg_file: Path, output_folder: Path):
     # get the number of frames in the input file
     num_frames_str = _get_num_frames(input_file)
 
-    # intermediate apng file
+    # get the dimensions of the background image
+    width, height = _get_image_dimensions(bg_file)
+
+    # final gif output path
+    output_file = output_folder.joinpath(f"{input_file.stem}_{width}x{height}.gif")
+
+    # intermediate apng path (will be converted to final gif)
     apng_file = output_file.with_suffix(".apng")
 
-    filter_arg = f"[1:v]scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=decrease[fg];[0:v][fg]overlay=(W-w)/2:(H-h)/2:format=auto"
-
+    # resize input .apng to match the background image
+    # maintain aspect ratio and centering
+    filter_arg = f"[1:v]scale={width}:{height}:force_original_aspect_ratio=decrease[fg];[0:v][fg]overlay=(W-w)/2:(H-h)/2:format=auto"
     ffmpeg_args = [
         "ffmpeg",
         "-y",
@@ -99,8 +108,7 @@ def main(input_folder: Path, bg_file: Path, output_folder:Path):
     # onto bg
     for input_file in input_folder.iterdir():
         if input_file.is_file() and input_file.suffix == ".apng":
-            output_file = output_folder.joinpath(f"{input_file.stem}_{WIDTH}x{HEIGHT}.gif")
-            generate_overlaid_animation(input_file, bg_file, output_file)
+            generate_overlaid_animation(input_file, bg_file, output_folder)
 
 
 if __name__ == "__main__":
