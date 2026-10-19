@@ -5,6 +5,9 @@ Script to generate animated sprite overlaid onto static background as a gif.
 
 from pathlib import Path
 import subprocess
+import argparse
+
+DEFAULT_OUTPUT_DIR = "output_preview/"
 
 # NOTE assume bg image chosen is already this size
 WIDTH = 160
@@ -14,7 +17,7 @@ HEIGHT = 160
 # return as a string containing the number of frames
 # NOTE just using str as return type since we'll be passing it in as an arg anyway
 def _get_num_frames(filename: Path) -> str:
-    args = [
+    ffprobe_args = [
         "ffprobe",
         "-v",
         "error",
@@ -27,8 +30,8 @@ def _get_num_frames(filename: Path) -> str:
         "csv=p=0",
         filename,
     ]
-    output = subprocess.check_output(args)
-    print(f"Running command with args: {args}")
+    output = subprocess.check_output(ffprobe_args)
+    print(f"Running command with args: {ffprobe_args}")
     print(f"output: {output}")
     return output.strip().decode("utf-8")
 
@@ -88,6 +91,28 @@ def _convert_to_gif(input_file: Path, output_file: Path):
     print(f"Running command with args: {ffmpeg_args}")
     print(f"Preview saved to: {output_file}")
 
+def main(input_folder: Path, bg_file: Path, output_folder:Path):
+    # create output dir
+    output_folder.mkdir(parents=True, exist_ok=True)
+
+    # for each .apng in the input folder, generate the resized version overlaid
+    # onto bg
+    for input_file in input_folder.iterdir():
+        if input_file.is_file() and input_file.suffix == ".apng":
+            output_file = output_folder.joinpath(f"{input_file.stem}_{WIDTH}x{HEIGHT}.gif")
+            generate_overlaid_animation(input_file, bg_file, output_file)
+
 
 if __name__ == "__main__":
-    pass
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input_dir", help="input directory containing original .apng files")
+    parser.add_argument("bg_path", help="path to background .png file to use")
+    parser.add_argument(
+        "-o",
+        "--output-dir",
+        default=DEFAULT_OUTPUT_DIR,
+        help="output directory for results",
+    )
+    args = parser.parse_args()
+
+    main(Path(args.input_dir), Path(args.bg_path), Path(args.output_dir))
