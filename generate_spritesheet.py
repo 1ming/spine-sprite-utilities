@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+"""
+Script to generate spritesheets for a set of Spine sprites in a Godot scene.
+"""
+
 from pathlib import Path
 from dataclasses import dataclass
 import subprocess
@@ -183,7 +187,9 @@ class SpritesheetGenerator:
                 file.unlink()
 
     # create animated png
-    def _create_previews(self, images_dir: Path, filename_prefix:str="") -> list[Path]:
+    def _create_previews(
+        self, images_dir: Path, filename_prefix: str = ""
+    ) -> list[Path]:
         output_files = []
         # generated animated png from frames
         output_dir = images_dir.parent
@@ -321,6 +327,7 @@ if __name__ == "__main__":
         "-a",
         "--animation",
         nargs=2,
+        metavar=("SPRITE", "ANIMATION"),
         help="only generate spritesheet for a specific sprite and animation. \
             specify sprite name followed by animation name",
     )
